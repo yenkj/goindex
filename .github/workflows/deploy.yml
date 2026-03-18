@@ -15,34 +15,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
-
-      - name: Configure npm
-        run: |
-          npm config set registry https://registry.npmjs.org/
-          npm config set strict-ssl false
-          npm config set fetch-retries 5
-          npm config set fetch-retry-mintimeout 20000
-
-      - name: Remove node-sass and install sass
-        run: |
-          npm uninstall node-sass
-          npm install sass --save-dev
+          node-version: '18' # 降低版本以提高对旧版 Webpack 的兼容性
+          cache: 'npm'      # 开启 npm 缓存，加快后续构建速度
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: Update Browserslist DB
-        run: npx browserslist@latest --update-db
+        run: |
+          npm install --legacy-peer-deps
+          # 使用推荐的新命令更新浏览器数据库
+          npx update-browserslist-db@latest 
 
       - name: Build
-        # 核心修复：开启 OpenSSL 遗留算法支持，解决 ERR_OSSL_EVP_UNSUPPORTED 错误
         env:
           NODE_OPTIONS: --openssl-legacy-provider
         run: npm run build
+
+      # 关键步骤：检查构建产物是否存在，防止部署空文件夹
+      - name: Check build output
+        run: ls -la ./dist
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: ./dist # 请确认你的 build 命令输出目录确实是 dist
