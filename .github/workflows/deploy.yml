@@ -16,7 +16,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18' # 降低版本以提高对旧版 Webpack 的兼容性
-          cache: 'npm'      # 开启 npm 缓存，加快后续构建速度
 
       - name: Install dependencies
         run: |
