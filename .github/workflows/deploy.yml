@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest  # 确保秒启动，不排队
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -15,19 +15,21 @@ jobs:
       - name: Setup Node.js 14
         uses: actions/setup-node@v3
         with:
-          node-version: '14' # 强制使用旧版环境，完美兼容 Vue CLI 4
+          node-version: '14'
 
       - name: Clean, Install and Build
         run: |
-          # 1. 进入子目录
           cd goindex-acrou
           
-          # 2. 彻底清除之前报错留下的所有干扰文件
+          # 1. 清理
           rm -rf node_modules package-lock.json
           
-          # 3. Node 14 模式下直接安装，不需要 legacy-provider 旗标
-          # --no-audit 和 --no-fund 可以加快在服务器上的安装速度
+          # 2. 常规安装
           npm install --no-audit --no-fund
+          
+          # 3. 【核心修复】手动补齐缺失的依赖项 plyr
+          # 加上 --no-save 是为了防止在网页端环境修改 package.json 导致其他冲突
+          npm install plyr --no-save
           
           # 4. 执行构建
           npm run build
