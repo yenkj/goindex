@@ -1,0 +1,48 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Configure npm
+        run: |
+          npm config set registry https://registry.npmjs.org/
+          npm config set strict-ssl false
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+
+      - name: Remove node-sass and install sass
+        run: |
+          npm uninstall node-sass
+          npm install sass --save-dev
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Update Browserslist DB
+        run: npx browserslist@latest --update-db
+
+      - name: Build
+        # 核心修复：开启 OpenSSL 遗留算法支持，解决 ERR_OSSL_EVP_UNSUPPORTED 错误
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
