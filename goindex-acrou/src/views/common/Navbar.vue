@@ -90,7 +90,7 @@ export default {
       this.gds = window.gds.map((item, index) => {
         return {
           name: item,
-          id: "/" + index + ":/",
+          id: "/" + index + "/",
         };
       });
       this.chooseGD();

@@ -10,7 +10,7 @@
             <li>
               <a
                 v-show="navs && navs.length > 0"
-                @click="go('/' + index + ':/')"
+                @click="go('/' + index + '/')"
                 >{{ $t("index") }}</a
               >
             </li>
@@ -88,7 +88,7 @@ export default {
           // if (p.match("/[0-9]+:/")[0] === p) {
           //   n = this.$t('index');
           // }
-          if (n.match("[0-9]+:")) {
+          if (n.match("[0-9]+/")) {
             continue;
           }
           navs.push({

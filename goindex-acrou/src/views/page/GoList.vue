@@ -257,7 +257,7 @@ export default {
       this.$copyText(path);
     },
     thum(url) {
-      return url ? `/${this.$route.params.id}:view?url=${url}` : "";
+      return url ? `/${this.$route.params.id}/view?url=${url}` : "";
     },
     inited(viewer) {
       this.$viewer = viewer;
@@ -318,7 +318,7 @@ export default {
         return;
       }
       if (target === "down" || (!checkExtends(path) && !file.isFolder)) {
-        location.href = path.replace(/^\/(\d+:)\//, "/$1down/");
+        location.href = path.replace(/^\/(\d+)\//, "/$1down/");
         return;
       }
       if (target === "view") {
