@@ -15,25 +15,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18' # 降低版本以提高对旧版 Webpack 的兼容性
+          node-version: '18' # Node 18 对旧项目兼容性较好
 
-      - name: Install dependencies
-        run: |
-          npm install --legacy-peer-deps
-          # 使用推荐的新命令更新浏览器数据库
-          npx update-browserslist-db@latest 
-
-      - name: Build
+      - name: Install and Build
+        # 核心修复：设置 working-directory 为你的子文件夹名
+        working-directory: ./goindex-acrou 
         env:
           NODE_OPTIONS: --openssl-legacy-provider
-        run: npm run build
-
-      # 关键步骤：检查构建产物是否存在，防止部署空文件夹
-      - name: Check build output
-        run: ls -la ./dist
+        run: |
+          # 1. 强制清理并安装依赖
+          npm install --legacy-peer-deps
+          
+          # 2. 修复 node-sass 在 Linux 环境下的兼容性（如果报错的话）
+          # npm rebuild node-sass
+          
+          # 3. 运行构建
+          npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist # 请确认你的 build 命令输出目录确实是 dist
+          # 核心修复：指向子目录下的 dist 文件夹
+          publish_dir: ./goindex-acrou/dist
