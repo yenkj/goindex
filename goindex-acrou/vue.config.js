@@ -1,5 +1,5 @@
 const path = require("path");
-const cdnDependencies = require("./dependencies-cdn");
+// 建议：如果不需要 CDN，可以不再引用 dependencies-cdn
 const BuildAppJSPlugin = require("./buildAppJSPlugin");
 const CompressionWebpackPlugin = require("compression-webpack-plugin");
 const { set } = require("lodash");
@@ -12,45 +12,30 @@ function resolve(dir) {
 process.env.VUE_APP_VERSION = require("./package.json").version;
 process.env.VUE_APP_G2INDEX_VERSION = require("./package.json").g2index;
 
-process.env.VUE_APP_CDN_PATH =
-  process.env.VUE_APP_CDN_PATH.replace(
-    "@master",
-    "@v" + process.env.VUE_APP_VERSION
-  ) || "/";
-
-// 基础路径 注意发布之前要先修改这里
-let publicPath = process.env.VUE_APP_CDN_PATH || "/";
-let cdnPath = process.env.VUE_APP_CDN_PATH;
+// --- 核心修改点 1: 固定 PublicPath ---
+// 不再依赖不确定的环境变量，直接指向你的 GitHub Pages 地址
 const isProd = process.env.NODE_ENV === "production";
+let publicPath = isProd ? "https://yenkj.github.io/goindex/" : "/";
 
-// 设置不参与构建的库
-let externals = {};
-cdnDependencies.forEach((item) => {
-  externals[item.name] = item.library;
-});
-
-// 引入文件的 cdn 链接
-const cdn = {
-  css: cdnDependencies.map((e) => e.css).filter((e) => e),
-  js: cdnDependencies.map((e) => e.js).filter((e) => e),
-};
 module.exports = {
   publicPath,
   lintOnSave: true,
   css: {
     loaderOptions: {
-      // 设置 scss 公用变量文件
       sass: {
-        prependData: `$cdnPath: "${isProd ? cdnPath : "/"}";`,
+        // --- 核心修改点 2: 修正 Sass 变量路径 ---
+        prependData: `$cdnPath: "${publicPath}";`,
       },
     },
   },
   configureWebpack: (config) => {
     const configNew = {};
     if (isProd) {
-      configNew.externals = externals;
+      // --- 核心修改点 3: 禁用 Externals ---
+      // 注释掉下面这行，让 Webpack 把 Vue, Vuex, Axios 等全部打包进 js 文件
+      // configNew.externals = externals; 
+      
       configNew.plugins = [
-        // gzip
         new CompressionWebpackPlugin({
           filename: "[path].gz[query]",
           test: new RegExp("\\.(" + ["js", "css"].join("|") + ")$"),
@@ -65,31 +50,22 @@ module.exports = {
 
   chainWebpack: (config) => {
     config.plugin("BuildAppJSPlugin").use(BuildAppJSPlugin);
-    /**
-     * 添加 CDN 参数到 htmlWebpackPlugin 配置中
-     */
+
     config.plugin("html").tap((options) => {
+      // --- 核心修改点 4: 简化 HTML 注入 ---
+      // 既然不使用外部 CDN，我们将 inject 设为 true，让 Webpack 自动插入打包好的脚本
+      set(options, "[0].inject", true);
       if (isProd) {
-        set(options, "[0].cdn", cdn);
-      } else {
-        set(options, "[0].cdn", {
-          js: cdnDependencies.filter((e) => e.name === "").map((e) => e.js),
-          css: cdnDependencies.filter((e) => e.name === "").map((e) => e.css),
-        });
+        // 清空 cdn 配置，防止插件重复插入旧的脚本
+        set(options, "[0].cdn", { css: [], js: [] });
       }
-      set(options, "[0].inject", false);
       return options;
     });
-    /**
-     * 删除懒加载模块的 prefetch preload，降低带宽压力
-     * https://cli.vuejs.org/zh/guide/html-and-static-assets.html#prefetch
-     * https://cli.vuejs.org/zh/guide/html-and-static-assets.html#preload
-     * 而且预渲染时生成的 prefetch 标签是 modern 版本的，低版本浏览器是不需要的
-     */
+
     if (isProd) {
       config.plugins.delete("prefetch").delete("preload");
     }
-    // 解决 cli3 热更新失效 https://github.com/vuejs/vue-cli/issues/1559
+
     config.resolve.symlinks(true);
     config.resolve.alias
       .set("@", resolve("src"))
@@ -98,7 +74,6 @@ module.exports = {
       .set("@api", resolve("src/api"))
       .set("@node_modules", resolve("node_modules"));
 
-    // 分析工具
     if (process.env.npm_config_report) {
       config
         .plugin("webpack-bundle-analyzer")
@@ -106,7 +81,6 @@ module.exports = {
     }
   },
 
-  // 不输出 map 文件
   productionSourceMap: false,
 
   devServer: {
@@ -126,7 +100,6 @@ module.exports = {
   pluginOptions: {
     i18n: {
       locale: "zh-chs",
-      fallbackLocale: "en",
       localeDir: "locales",
       enableInSFC: true,
     },
