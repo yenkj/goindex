@@ -15,28 +15,30 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18' # 回到 18 以支持 openssl-legacy-provider
+          node-version: '18'
 
       - name: Clean, Install and Build
         env:
-          # 在 Node 18 下，必须开启此项以兼容旧版 Webpack 4
-          NODE_OPTIONS: --openssl-legacy-provider
+          # 核心修复：1.开启旧版兼容 2.将内存限制提升到 4GB 防止构建中途卡死
+          NODE_OPTIONS: --openssl-legacy-provider --max-old-space-size=4096
         run: |
+          # 进入子目录
           cd goindex-acrou
           
-          # 1. 彻底清除网页端可能残留的冲突文件
-          rm -f package-lock.json
-          rm -rf node_modules
+          echo ">>> 正在清理旧环境..."
+          rm -rf node_modules package-lock.json
           
-          # 2. 解决 node-sass 这种顽固分子的二进制编译问题
-          npm uninstall node-sass
-          npm install sass sass-loader@8.0.2 --save-dev
+          echo ">>> 正在替换 sass 编译器..."
+          npm uninstall node-sass --quiet
+          npm install sass sass-loader@8.0.2 --save-dev --quiet
           
-          # 3. 现场生成全新的依赖树，不读取旧的 lockfile
-          npm install --legacy-peer-deps --no-package-lock
+          echo ">>> 正在安装依赖 (这可能需要 2-3 分钟，请稍候)..."
+          # 使用 --no-audit 和 --no-fund 减少不必要的网络请求和输出，加快速度
+          npm install --legacy-peer-deps --no-package-lock --no-audit --no-fund --quiet
           
-          # 4. 构建
-          npm run build
+          echo ">>> 正在开始构建 (已开启详细日志输出)..."
+          # 添加 --verbose 标记，如果卡住了，你可以看到具体卡在哪一个文件
+          npm run build -- --verbose
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
