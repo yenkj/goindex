@@ -21,15 +21,15 @@ jobs:
         run: |
           cd goindex-acrou
           
-          # 1. 清理
+          # 1. 物理清理旧环境
           rm -rf node_modules package-lock.json
           
-          # 2. 常规安装
+          # 2. 常规安装依赖
           npm install --no-audit --no-fund
           
-          # 3. 【核心修复】手动补齐缺失的依赖项 plyr
-          # 加上 --no-save 是为了防止在网页端环境修改 package.json 导致其他冲突
-          npm install plyr --no-save
+          # 3. 【核心修复】手动安装缺失的依赖项 plyr
+          # 这一步是为了修复 vue-plyr 找不到依赖的问题
+          npm install plyr@3.6.12 --no-save
           
           # 4. 执行构建
           npm run build
