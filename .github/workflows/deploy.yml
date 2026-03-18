@@ -15,29 +15,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16' # 对于这种旧版 GoIndex，Node 16 的稳定性远高于 18/20
+          node-version: '18' # 回到 18 以支持 openssl-legacy-provider
 
       - name: Clean, Install and Build
         env:
+          # 在 Node 18 下，必须开启此项以兼容旧版 Webpack 4
           NODE_OPTIONS: --openssl-legacy-provider
         run: |
-          # 1. 进入子目录
           cd goindex-acrou
           
-          # 2. 【核心修复】强力删除所有可能导致 npm 崩溃的旧文件
-          # 既然你只有网页端，我们就让服务器每次都“白手起家”
+          # 1. 彻底清除网页端可能残留的冲突文件
           rm -f package-lock.json
           rm -rf node_modules
           
-          # 3. 解决 node-sass 导致的安装崩溃
-          # 先卸载，再安装现代的 sass 替代品
+          # 2. 解决 node-sass 这种顽固分子的二进制编译问题
           npm uninstall node-sass
           npm install sass sass-loader@8.0.2 --save-dev
           
-          # 4. 全新安装依赖（跳过 lock 文件逻辑）
+          # 3. 现场生成全新的依赖树，不读取旧的 lockfile
           npm install --legacy-peer-deps --no-package-lock
           
-          # 5. 执行构建
+          # 4. 构建
           npm run build
 
       - name: Deploy to GitHub Pages
