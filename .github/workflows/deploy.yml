@@ -15,26 +15,29 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18' # Node 18 对旧项目兼容性较好
+          # 使用 Node 18，它比 20 更稳，比 16 维护更好
+          node-version: '18'
 
       - name: Install and Build
-        # 核心修复：设置 working-directory 为你的子文件夹名
-        working-directory: ./goindex-acrou 
+        # 必须指定子目录，否则找不到 package.json
+        working-directory: ./goindex-acrou
         env:
+          # 修复旧版 Webpack 的 OpenSSL 兼容性问题
           NODE_OPTIONS: --openssl-legacy-provider
         run: |
-          # 1. 强制清理并安装依赖
+          # 1. 强制清理可能冲突的 node-sass (Vue CLI 4 的通病)
+          npm uninstall node-sass
+          npm install sass sass-loader@8.0.2 --save-dev
+          
+          # 2. 安装剩余依赖，忽略 peer 冲突
           npm install --legacy-peer-deps
           
-          # 2. 修复 node-sass 在 Linux 环境下的兼容性（如果报错的话）
-          # npm rebuild node-sass
-          
-          # 3. 运行构建
+          # 3. 执行构建脚本
           npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # 核心修复：指向子目录下的 dist 文件夹
+          # 部署子目录下的 dist 文件夹
           publish_dir: ./goindex-acrou/dist
