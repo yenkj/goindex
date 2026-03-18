@@ -15,26 +15,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '16' # 对于这种旧版 GoIndex，Node 16 的稳定性远高于 18/20
 
-      - name: Clean and Build
+      - name: Clean, Install and Build
         env:
           NODE_OPTIONS: --openssl-legacy-provider
         run: |
-          # 1. 进入项目目录
+          # 1. 进入子目录
           cd goindex-acrou
           
-          # 2. 物理删除旧的 lock 文件和 node_modules
-          # 这是解决 "Exit handler never called" 和 "ENOTEMPTY" 的唯一稳妥办法
-          rm -rf node_modules package-lock.json
+          # 2. 【核心修复】强力删除所有可能导致 npm 崩溃的旧文件
+          # 既然你只有网页端，我们就让服务器每次都“白手起家”
+          rm -f package-lock.json
+          rm -rf node_modules
           
-          # 3. 处理会导致构建失败的 node-sass
-          # 直接将其替换为现代的 dart-sass (即 sass 包)
+          # 3. 解决 node-sass 导致的安装崩溃
+          # 先卸载，再安装现代的 sass 替代品
           npm uninstall node-sass
           npm install sass sass-loader@8.0.2 --save-dev
           
-          # 4. 执行全新安装，不生成也不读取 lock 文件
-          # --no-package-lock 彻底避开 npm 内部的重命名逻辑错误
+          # 4. 全新安装依赖（跳过 lock 文件逻辑）
           npm install --legacy-peer-deps --no-package-lock
           
           # 5. 执行构建
