@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # 使用旧版系统镜像，兼容性更好
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -15,30 +15,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '14.21.3' # 使用 Node 14 最后的稳定版
 
-      - name: Clean, Install and Build
-        env:
-          # 核心修复：1.开启旧版兼容 2.将内存限制提升到 4GB 防止构建中途卡死
-          NODE_OPTIONS: --openssl-legacy-provider --max-old-space-size=4096
+      - name: Clean and Build
         run: |
-          # 进入子目录
           cd goindex-acrou
           
-          echo ">>> 正在清理旧环境..."
+          # 1. 物理清理（Node 14 也要清理，确保万无一无）
           rm -rf node_modules package-lock.json
           
-          echo ">>> 正在替换 sass 编译器..."
-          npm uninstall node-sass --quiet
-          npm install sass sass-loader@8.0.2 --save-dev --quiet
+          # 2. 这里的 npm 是旧版的，处理 node-sass 极其稳定
+          # 不需要卸载 node-sass，直接安装即可
+          # 如果安装报错，请告诉我，我们再考虑替换 sass
+          npm install
           
-          echo ">>> 正在安装依赖 (这可能需要 2-3 分钟，请稍候)..."
-          # 使用 --no-audit 和 --no-fund 减少不必要的网络请求和输出，加快速度
-          npm install --legacy-peer-deps --no-package-lock --no-audit --no-fund --quiet
-          
-          echo ">>> 正在开始构建 (已开启详细日志输出)..."
-          # 添加 --verbose 标记，如果卡住了，你可以看到具体卡在哪一个文件
-          npm run build -- --verbose
+          # 3. 执行构建
+          npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
