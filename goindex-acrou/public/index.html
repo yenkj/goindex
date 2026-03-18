@@ -12,7 +12,7 @@
   <link href="<%= htmlWebpackPlugin.options.cdn.css[i] %>" rel="stylesheet">
   <% } %>
   <title><%= htmlWebpackPlugin.options.title %></title>
-  <script src="/setting.js"></script>
+  <script src="<%= BASE_URL %>setting.js"></script>
   <!-- 使用 CDN 加速的 JS 文件，配置在 vue.config.js 下 -->
   <% for (var i in htmlWebpackPlugin.options.cdn&&htmlWebpackPlugin.options.cdn.js) { %>
   <script src="<%= htmlWebpackPlugin.options.cdn.js[i] %>"></script>
@@ -21,7 +21,7 @@
 
 <body>
   <div id="app"></div>
-  <script src="/app.js"></script>
+  <script src="<%= BASE_URL %>app.js"></script>
 </body>
 
 </html>
